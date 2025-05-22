@@ -27,6 +27,9 @@ def webshell():
                 if session_id in connmap:
                     connmap[session_id].close()
                     del connmap[session_id]
+                    resp = make_response()
+                    resp.headers["X-STATE"] = "OK"
+                    return resp
 
             case "COMM":
                 data = request.get_data()
@@ -34,7 +37,7 @@ def webshell():
                 while sent < len(data):
                     sent += connmap[session_id].send(data[sent:])
 
-                ready = select.select([connmap[session_id]], [], [], 0.1)
+                ready = select.select([connmap[session_id]], [], [], 0)
                 if ready[0]:
                     in_data = connmap[session_id].recv(1024)
                     if in_data is None:
@@ -46,7 +49,8 @@ def webshell():
                 resp = make_response(in_data)
                 resp.headers["X-STATE"] = "OK"
                 return resp
-
+            case _:
+                return make_response(b"", 404)
     except ConnectionAbortedError as e:
         print(e)
         resp = make_response(b"", 200)
